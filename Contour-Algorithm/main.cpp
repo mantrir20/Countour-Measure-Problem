@@ -51,29 +51,74 @@ set<point> union_ret(set<rectangle> R)
 
 }
 
-cord y_set(set<rectangle> R)
+vector<cord> y_set(set<rectangle> R)
 {
+    vector<cord> cord_set;
+    for (int i=0; i< R.size(); i++){
+        cord c1, c2;
+        c1.x= R[i].y_bottom;
+        c2.x= R[i].y_top;
+        vector<cord>::iterator itr1, itr2;
+        itr1=find(cord_set.begin(), cord_set.end(), c1);
+        if(itr1==cord_set.end()){
+            cord_set.push_back(c1);
+        }
+        itr2=find(cord_set.begin(), cord_set.end(), c2);
+        if(itr2==cord_set.end()){
+            cord_set.push_back(c2);
+        }
+    }
+    return cord_set;
+}
+
+vector<interval> partition(vector<cord> Y)
+{   
+    vector <interval> interval_set;
+    int y_max=INT_MIN, y_min=INT_MAX;
+    for(int i=0; i<Y.size(); i++){
+        if(Y[i].x>=y_max){
+            y_max=Y[i].x;
+        }
+        if(Y[i].x<=y_min){
+            y_min=Y[i].x;
+        }
+    }
+    for(int i=0; i<Y.size(); i++){
+        int y1=Y[i].x;
+        for(int j=0; j<Y.size(); j++){
+            if(i==j){
+                continue;
+            }
+            int y2=Y[j].x;
+            if(y1<y2){
+                if(y_max<=y1 || y_min>=y2){
+                    interval in1;
+                    in1.bottom.x=y1;
+                    in1.top.x=y2;
+                    vector<interval>::iterator itr1;
+                    itr1=find(interval_set.begin(), interval_set.end(), in1);
+                    if(itr1==interval_set.end()){
+                        interval_set.push_back(in1);
+                    }
+                }
+            }
+        }
+    }
+    return interval_set;
+}
+
+set<cord> x_proj(set<point> p){
 
 }
 
-set<interval> partition(set<cord> Y)
-{
-
-}
-
-set<cord> x_proj(set<point> p)
-{
-
-}
-
-set<interval> intervals(set<cord> c)
-{
+set<interval> intervals(set<cord> c){
 
 }
 
 typedef struct newPtype{
     int aext,b,c,dext;
 }newPtype;
+
 //set<stripe> Stripes(set<rectangle> R, rectangle f, )
 
 bool comp(interval &i, interval &j) { 
@@ -88,6 +133,25 @@ bool comp2_P(){
     return false;
 } // must check
 
+// copy(Sx1,P,x_ext.bottom,xm,Sleft);
+void copy(vector<stripe> &Sx1, vector<vector<int>> &P,cord bottom,int xm, vector<stripe> &Sleft){
+    vector <stripe> Sprime;
+    interval Ix;
+    Ix.bottom = bottom;
+    Ix.top.cord.x = xm;
+    for(intervalsinP:P){
+        interval Iy;
+        Iy.bottom.cord.x = intervalsinp[1];
+        Iy.top.cord.x = intervalsinp[2];
+        Stripe tmpStrp;
+        tmpstrp.x_inter = Ix;
+        tmpstrp.y_inter = Iy;
+        Sprime.push_back(tmpStrp);
+    }
+    for(strp:Sx1){
+        if(strp.y_inter ) // ye kya bakchodi hai paper me koi samjhao
+    }
+}
 void Stripes(vector<edge> V, interval x_ext, 
     vector<interval> &L,
     vector<interval> &R,
@@ -194,6 +258,13 @@ void Stripes(vector<edge> V, interval x_ext,
 
         set_union(Rx1.begin(),Rx1.end(),R.begin(),R.end(),R.begin(),comp);
 
+        vector<stripe> &Sleft,
+        vector<stripe> &Sright,
+        copy(Sx1,P,x_ext.bottom,xm,Sleft);
+        copy(Sx2,P,x_ext.bottom,xm,Sright);
+        //blacken
+        //concat results
+
     }
 }
 
@@ -228,6 +299,3 @@ set<stripe> rectangle_dac(vector<rectangle> R)
     Stripes(VRX, base, L, Rt, S, P); // check return type
     
 }
-
-
-
