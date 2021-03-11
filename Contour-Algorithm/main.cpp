@@ -44,7 +44,7 @@ typedef struct stripe{
     interval x_inter;
     interval y_inter;
     vector <interval> x_union;
-}point;
+}stripe;
 
 set<point> union_ret(set<rectangle> R)
 {
@@ -73,17 +73,17 @@ set<interval> intervals(set<cord> c)
 
 typedef struct newPtype{
     int aext,b,c,dext;
-}
+}newPtype;
 //set<stripe> Stripes(set<rectangle> R, rectangle f, )
 
 bool comp(interval &i, interval &j) { 
-    if(i.bottom<j.bottom || (i.bottom==j.bottom && i.top<b.top))
+    if(i.bottom.x<j.bottom.x || (i.bottom.x==j.bottom.x && i.top.x<j.top.x))
         return true;
     return false;
 } // must check
 
-bool comp2(,) { 
-    if())
+bool comp2_P(){ 
+    if(1)
         return true;
     return false;
 } // must check
@@ -124,16 +124,16 @@ void Stripes(vector<edge> V, interval x_ext,
         S.push_back(s1);
 
         for(int i=0; i< S.size(); i++)
-            if(S[i].y_inter == V[0].inter)
+            if(S[i].y_inter.bottom.x == V[0].inter.bottom.x  && S[i].y_inter.top.x == V[0].inter.top.x )
             {
-                if(V[0].e_type == 0){
-                  Interval int1;
+                if(V[0].e_type.type == 0){
+                  interval int1;
                   int1.bottom = V[0].cordinate;
                   int1.top = x_ext.top;
                   S[i].x_union = vector<interval>{int1};
                 }
                 else{
-                  Interval int1;
+                  interval int1;
                   int1.bottom = x_ext.bottom;
                   int1.top = V[0].cordinate;
                   S[i].x_union = vector<interval>{int1};
@@ -145,13 +145,13 @@ void Stripes(vector<edge> V, interval x_ext,
         vector <int> pts;
         vector<edge> V1,V2;
         for(int i=0; i<V.size();i++){
-            pts.push_back(V[i].cordinate); // sort by x-coords
+            pts.push_back(V[i].cordinate.x); // sort by x-coords
         }
         sort(pts.begin(),pts.end());
         int xm = pts[(pts.size()+1)/2];
         // vector<interval> L1,L2,R1,R2;
         for(int i=0;i<V.size();i++){
-            if(V[i].cordinate<=xm){
+            if(V[i].cordinate.x<=xm){
                 V1.push_back(V[i]);
             }
             else{
@@ -160,13 +160,13 @@ void Stripes(vector<edge> V, interval x_ext,
         }
 
         // Conquer
-        Interval intt;
+        interval intt;
         cord c1;
         c1.x = xm;
         intt.bottom = x_ext.bottom;
         intt.top = c1;
         Stripes(V1,intt,Lx1,Rx1,Sx1,Px1);
-        Interval intt2;
+        interval intt2;
         cord c2;
         c2.x = xm;
         intt.top = x_ext.top;
@@ -181,12 +181,12 @@ void Stripes(vector<edge> V, interval x_ext,
         sort(Rx1.begin(),Rx1.end(),comp);
         sort(Rx2.begin(),Rx2.end(),comp);
         
-        sort(Px2.begin(),Px2.end(),comp_P);
-        sort(Px1.begin(),Px1.end(),comp_P);
+        sort(Px2.begin(),Px2.end(),comp2_P);
+        sort(Px1.begin(),Px1.end(),comp2_P);
 
         set_difference(Lx2.begin(), Lx2.end(), LR.begin(), LR.end(),
             L.begin(), comp); 
-        set_union(L.begin(),L.end(),L2.begin(),L2.end(),L.begin(),comp);
+        set_union(L.begin(),L.end(),Lx2.begin(),Lx2.end(),L.begin(),comp);
 
         set_difference(Rx2.begin(), Rx2.end(), LR.begin(), LR.end(),
             R.begin(), comp); 
@@ -221,7 +221,11 @@ set<stripe> rectangle_dac(vector<rectangle> R)
     interval base;
     base.bottom.x = INT_MIN;
     base.top.x = INT_MAX;
-    Stripes(VRX, base); // check return type
+
+    vector<interval> L,Rt;
+    vector<stripe> S;
+    vector<vector<int>> P;
+    Stripes(VRX, base, L, Rt, S, P); // check return type
     
 }
 
