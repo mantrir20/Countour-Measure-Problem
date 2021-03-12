@@ -152,6 +152,25 @@ void copy(vector<stripe> &Sx1, vector<vector<int>> &P,cord bottom,int xm, vector
         if(strp.y_inter ) // ye kya bakchodi hai paper me koi samjhao
     }
 }
+
+bool interval_subset(interval i1, interval i2)
+{
+    if( (i2.bottom.x <= i1.bottom.x) && (i2.top.x >=i1.top.x) ) return true;
+    return false; 
+}
+
+void blacken(vector<stripe> &S, vector<interval> &J){
+    
+    for(int i=0;i < S.size();i++){
+        for(int j=0; j < J.size(); j++){
+            if(interval_subset(S[i].y_inter, J[i])){
+                S[i].x_union.push_back(S[i].x_inter); // Doubt if it is push pack or clear and push_back
+            }
+        }
+    }
+}
+
+
 void Stripes(vector<edge> V, interval x_ext, 
     vector<interval> &L,
     vector<interval> &R,
@@ -262,7 +281,16 @@ void Stripes(vector<edge> V, interval x_ext,
         vector<stripe> &Sright,
         copy(Sx1,P,x_ext.bottom,xm,Sleft);
         copy(Sx2,P,x_ext.bottom,xm,Sright);
+        
+        
         //blacken
+
+        set_difference(Rx2.begin(), Rx2.end(), LR.begin(), LR.end(), R.begin(), comp); 
+        blacken(Sleft, R);
+        set_difference(Lx1.begin(), Lx1.end(), LR.begin(), LR.end(), R.begin(), comp); 
+        blacken(Sright, R);
+        
+        
         //concat results
 
     }
