@@ -129,19 +129,18 @@ void copy(vector<stripe> &Sx1, vector<vector<int>> &P,cord bottom,int xm, vector
     interval Ix;
     Ix.bottom = bottom;
     Ix.top.cord.x = xm;
-    for(intervalsinP:P){
-        interval Iy;
-        Iy.bottom.cord.x = intervalsinp[1];
-        Iy.top.cord.x = intervalsinp[2];
-        Stripe tmpStrp;
-        tmpstrp.x_inter = Ix;
-        tmpstrp.y_inter = Iy;
-        Sprime.push_back(tmpStrp);
+    vector <interval> all_Iy = partition(P);
+    for(auto intv:all_Iy){
+        stripe strp;
+        strp.x_inter = Ix;
+        strp.y_inter = intv;
+        Sprime.push_back(strp);
     }
-    for(strp:Sx1){
-        if(strp.y_inter ) // ye kya bakchodi hai paper me koi samjhao
+    for(auto sdash:Sprime){
+
     }
 }
+
 
 bool interval_subset(interval i1, interval i2)
 {
