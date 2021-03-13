@@ -100,17 +100,22 @@ typedef struct newPtype{
 
 //set<stripe> Stripes(set<rectangle> R, rectangle f, )
 
-bool comp(interval &i, interval &j) { 
-    if(i.bottom.x<j.bottom.x || (i.bottom.x==j.bottom.x && i.top.x<j.top.x))
-        return true;
-    return false;
-} // must check
+struct comp{
+    bool operator()(const interval &i,const interval &j){ 
+        if(i.bottom.x<j.bottom.x || (i.bottom.x==j.bottom.x && i.top.x<j.top.x))
+            return true;
+        return false;
+    }
+};
 
-bool comp2_P(){ 
-    if(1)
-        return true;
-    return false;
-} // must check
+// TO DO HAI YE COMPLETE NHI
+struct comp2_P{
+    bool operator()(const interval &i,const interval &j){ 
+        if(i.bottom.x<j.bottom.x || (i.bottom.x==j.bottom.x && i.top.x<j.top.x))
+            return true;
+        return false;
+    }
+};
 
 // copy(Sx1,P,x_ext.bottom,xm,Sleft);
 void copy(vector<stripe> &Sx1, vector<vector<int>> &P,cord bottom,int xm, vector<stripe> &Sleft){
