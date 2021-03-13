@@ -71,6 +71,12 @@ vector<cord> y_set(set<rectangle> R)
     return cord_set;
 }
 
+struct cmp_partition{
+    bool operator()(const cord &a, const cord &b){
+        return a.x<b.x;
+    }
+};
+
 vector<interval> partition(vector<cord> Y)
 {   
     vector <interval> interval_set;
