@@ -74,35 +74,14 @@ vector<cord> y_set(set<rectangle> R)
 vector<interval> partition(vector<cord> Y)
 {   
     vector <interval> interval_set;
-    int y_max=INT_MIN, y_min=INT_MAX;
-    for(int i=0; i<Y.size(); i++){
-        if(Y[i].x>=y_max){
-            y_max=Y[i].x;
-        }
-        if(Y[i].x<=y_min){
-            y_min=Y[i].x;
-        }
-    }
-    for(int i=0; i<Y.size(); i++){
-        int y1=Y[i].x;
-        for(int j=0; j<Y.size(); j++){
-            if(i==j){
-                continue;
-            }
-            int y2=Y[j].x;
-            if(y1<y2){
-                if(y_max<=y1 || y_min>=y2){
-                    interval in1;
-                    in1.bottom.x=y1;
-                    in1.top.x=y2;
-                    vector<interval>::iterator itr1;
-                    itr1=find(interval_set.begin(), interval_set.end(), in1);
-                    if(itr1==interval_set.end()){
-                        interval_set.push_back(in1);
-                    }
-                }
-            }
-        }
+    sort(Y.begin(),Y.end(),cmp_partition);
+    for(int i=0;i<Y.size()-1;i++){
+        if(Y[i]==Y[i+1])
+            continue;
+        interval in1;
+        in1.bottom.x=Y[i];
+        in1.top.x=Y[i+1];
+        interval_set.push_back(in1);
     }
     return interval_set;
 }
