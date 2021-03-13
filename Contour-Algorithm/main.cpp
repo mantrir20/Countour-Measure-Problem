@@ -32,8 +32,6 @@ typedef struct edge_type{
     int type; // 0,1,2,3 - left,right,bottom,top
 }edge_type;
 
-
-
 typedef struct edge{
     interval inter; // length
     cord cordinate; // x coord 
@@ -51,24 +49,25 @@ set<point> union_ret(set<rectangle> R)
 
 }
 
-vector<cord> y_set(set<rectangle> R)
-{
-    vector<cord> cord_set;
+struct cmp{
+    bool operator()(cord a, cord y){
+        return a.x<y.x;
+    }
+};
+vector<cord> y_set(vector <rectangle> R){
+    vector<cord> cord_set_vector;
+    set <cord,cmp> cord_set;
     for (int i=0; i< R.size(); i++){
         cord c1, c2;
-        c1.x= R[i].y_bottom;
-        c2.x= R[i].y_top;
-        vector<cord>::iterator itr1, itr2;
-        itr1=find(cord_set.begin(), cord_set.end(), c1);
-        if(itr1==cord_set.end()){
-            cord_set.push_back(c1);
-        }
-        itr2=find(cord_set.begin(), cord_set.end(), c2);
-        if(itr2==cord_set.end()){
-            cord_set.push_back(c2);
-        }
+        c1.x= R[i].y_bottom.x;
+        c2.x= R[i].y_top.x;
+        cord_set.insert(c1);
+        cord_set.insert(c2);
     }
-    return cord_set;
+    for(auto i: cord_set){
+        cord_set_vector.push_back(i);
+    }
+    return cord_set_vector;
 }
 
 struct cmp_partition{
@@ -77,16 +76,15 @@ struct cmp_partition{
     }
 };
 
-vector<interval> partition(vector<cord> Y)
-{   
+vector<interval> partition(vector<cord> Y){  
     vector <interval> interval_set;
-    sort(Y.begin(),Y.end(),cmp_partition);
+    sort(Y.begin(),Y.end(),cmp_partition());
     for(int i=0;i<Y.size()-1;i++){
-        if(Y[i]==Y[i+1])
+        if(Y[i].x==Y[i+1].x)
             continue;
         interval in1;
-        in1.bottom.x=Y[i];
-        in1.top.x=Y[i+1];
+        in1.bottom.x=Y[i].x;
+        in1.top.x=Y[i+1].x;
         interval_set.push_back(in1);
     }
     return interval_set;
@@ -106,44 +104,32 @@ typedef struct newPtype{
 
 //set<stripe> Stripes(set<rectangle> R, rectangle f, )
 
-struct comp{
-    bool operator()(const interval &i,const interval &j){ 
-        if(i.bottom.x<j.bottom.x || (i.bottom.x==j.bottom.x && i.top.x<j.top.x))
-            return true;
-        return false;
-    }
-};
-
-// TO DO HAI YE COMPLETE NHI
-struct comp2_P{
-    bool operator()(const interval &i,const interval &j){ 
-        if(i.bottom.x<j.bottom.x || (i.bottom.x==j.bottom.x && i.top.x<j.top.x))
-            return true;
-        return false;
-    }
-};
-
-struct cmp_stripe{
-    bool operator()(const stripe &a, const stripe &b){
+bool cmp_stripe(stripe a, stripe b){
         if(a.y_inter.bottom.x<b.y_inter.bottom.x || (a.y_inter.bottom.x==b.y_inter.bottom.x && a.y_inter.top.x<b.y_inter.top.x ))
             return true;
         return false;
-    }
-};
+}
+
 struct cmp_stripe2{
-    bool operator()(const stripe &a, const stripe &b){
+    bool operator() (const stripe & a, const stripe & b){
         if(a.y_inter.top.x<b.y_inter.top.x || (a.y_inter.top.x==b.y_inter.top.x && a.y_inter.bottom.x<b.y_inter.bottom.x ))
-            return true;
-        return false;
+             return true;
+         return false;
+    }
+    bool operator() (const stripe & left, int right){
+        return left.y_inter.top.x < right;
+    }
+    bool operator() (int left, const stripe & right){
+        return left < right.y_inter.top.x;
     }
 };
 
 // copy(Sx1,P,x_ext.bottom,xm,Sleft);
-void copy(vector<stripe> Sx1, vector<vector<int>> &P,cord bottom,int xm, vector<stripe> &Sleft){
+void copy(vector<stripe> Sx1, vector<cord> &P,cord bottom,int xm, vector<stripe> &Sleft){
     //vector <stripe> Sprime;
     interval Ix;
     Ix.bottom = bottom;
-    Ix.top.cord.x = xm;
+    Ix.top.x = xm;
     vector <interval> all_Iy = partition(P);
     for(auto intv:all_Iy){
         stripe strp;
@@ -155,10 +141,10 @@ void copy(vector<stripe> Sx1, vector<vector<int>> &P,cord bottom,int xm, vector<
     sort(Sleft.begin(),Sleft.end(),cmp_stripe);
     for(auto sdash:Sleft){
         // sdash.y_inter.bottom >=  sdash.y_inter.top <=
-        auto it = upper_bound(Sx1.begin(),Sx1.end(),sdash.y_inter.bottom.x,cmp_stripe);
-        while(prev(it)!=NULL && prev(it)->y_inter.bottom.x==sdash.y_inter.bottom.x)
+        auto it = upper_bound(Sx1.begin(),Sx1.end(),sdash.y_inter.bottom.x,cmp_stripe2());
+        while(prev(it)->y_inter.bottom.x==sdash.y_inter.bottom.x)
             it = prev(it);
-        auto it2 = upper_bound(it,Sx1.end(),sdash.y_inter.top.x,cmp_stripe2); // NOT SURE IF THIS COMPARATOR WORKS FINE and 
+        auto it2 = upper_bound(it,Sx1.end(),sdash.y_inter.top.x,cmp_stripe2()); // NOT SURE IF THIS COMPARATOR WORKS FINE and 
                                                                             // if the above while loop is required because it messes complexity
         if(it>it2) continue;
         else{
@@ -167,15 +153,13 @@ void copy(vector<stripe> Sx1, vector<vector<int>> &P,cord bottom,int xm, vector<
     }
 }
 
-
-bool interval_subset(interval i1, interval i2)
-{
-    if( (i2.bottom.x <= i1.bottom.x) && (i2.top.x >=i1.top.x) ) return true;
+bool interval_subset(interval i1, interval i2){
+    if( (i2.bottom.x <= i1.bottom.x) && (i2.top.x >=i1.top.x) ) 
+        return true;
     return false; 
 }
 
 void blacken(vector<stripe> &S, vector<interval> &J){
-    
     for(int i=0;i < S.size();i++){
         for(int j=0; j < J.size(); j++){
             if(interval_subset(S[i].y_inter, J[i])){
@@ -185,20 +169,27 @@ void blacken(vector<stripe> &S, vector<interval> &J){
     }
 }
 
+struct comp{
+    bool operator()(const interval &i,const interval &j){ 
+        if(i.bottom.x<j.bottom.x || (i.bottom.x==j.bottom.x && i.top.x<j.top.x))
+            return true;
+        return false;
+    }
+};
 
-void Stripes(vector<edge> V, interval x_ext, 
-    vector<interval> &L,
-    vector<interval> &R,
-    vector<stripe> &S,
-    vector<vector<int>> &P
-    )
-{ //check defination
+// TO DO HAI YE COMPLETE NHI
+bool comp2_P(cord a,cord b){
+    return a.x<=b.x;
+}
 
+void Stripes(vector<edge> V, interval x_ext, vector<interval> &L,
+    vector<interval> &R,vector<stripe> &S,vector<cord> &P){ 
+    //check definition
     // Case 1
     vector<interval> Lx1,Lx2;
     vector<interval> Rx1,Rx2;
     vector<stripe> Sx1,Sx2;
-    vector<vector<int>> Px1,Px2;
+    vector<cord> Px1,Px2;
     if(V.size() == 1)
     {
         if(V[0].e_type.type == 0)
@@ -210,18 +201,19 @@ void Stripes(vector<edge> V, interval x_ext,
             R.push_back(V[0].inter);
         }
 
-        P.push_back(vector<int>());
-        P[0].push_back(INT_MIN);
-        P[0].push_back(V[0].inter.bottom.x);
-        P[0].push_back(V[0].inter.top.x);
-        P[0].push_back(INT_MAX);
+        cord c1,c2,c3,c4;
+        c1.x = INT_MIN; c2.x = V[0].inter.bottom.x; c3.x = V[0].inter.top.x; c4.x = INT_MAX; 
+        P.push_back(c1);
+        P.push_back(c2);
+        P.push_back(c3);
+        P.push_back(c4);
 
         stripe s1;
         s1.x_inter = x_ext;
-        s1.y_inter = partition(); // TO DO
+        //s1.y_inter = partition(); // TO DO
         S.push_back(s1);
 
-        for(int i=0; i< S.size(); i++)
+        for(int i=0; i< S.size(); i++){
             if(S[i].y_inter.bottom.x == V[0].inter.bottom.x  && S[i].y_inter.top.x == V[0].inter.top.x )
             {
                 if(V[0].e_type.type == 0){
@@ -237,6 +229,7 @@ void Stripes(vector<edge> V, interval x_ext,
                   S[i].x_union = vector<interval>{int1};
                 }
             }
+        }
     }
     else{
         // Divide
@@ -273,38 +266,36 @@ void Stripes(vector<edge> V, interval x_ext,
 
         // Merge Merge to get LR = (L1ANDR2)
         vector<interval> LR;
-        set_intersection(Lx1.begin(),Lx1.end(),Rx2.begin(),Rx2.end(),LR.begin(),comp);
-        sort(Lx1.begin(),Lx1.end(),comp);
-        sort(Lx2.begin(),Lx2.end(),comp);
-        sort(Rx1.begin(),Rx1.end(),comp);
-        sort(Rx2.begin(),Rx2.end(),comp);
+        set_intersection(Lx1.begin(),Lx1.end(),Rx2.begin(),Rx2.end(),LR.begin(),comp());
+        sort(Lx1.begin(),Lx1.end(),comp());
+        sort(Lx2.begin(),Lx2.end(),comp());
+        sort(Rx1.begin(),Rx1.end(),comp());
+        sort(Rx2.begin(),Rx2.end(),comp());
         
         sort(Px2.begin(),Px2.end(),comp2_P);
         sort(Px1.begin(),Px1.end(),comp2_P);
 
         set_difference(Lx2.begin(), Lx2.end(), LR.begin(), LR.end(),
-            L.begin(), comp); 
-        set_union(L.begin(),L.end(),Lx2.begin(),Lx2.end(),L.begin(),comp);
+            L.begin(), comp()); 
+        set_union(L.begin(),L.end(),Lx2.begin(),Lx2.end(),L.begin(),comp());
 
         set_difference(Rx2.begin(), Rx2.end(), LR.begin(), LR.end(),
-            R.begin(), comp); 
-        set_union(Rx1.begin(),Rx1.end(),R.begin(),R.end(),R.begin(),comp);
+            R.begin(), comp()); 
+        set_union(Rx1.begin(),Rx1.end(),R.begin(),R.end(),R.begin(),comp());
 
-        set_union(Rx1.begin(),Rx1.end(),R.begin(),R.end(),R.begin(),comp);
+        set_union(Rx1.begin(),Rx1.end(),R.begin(),R.end(),R.begin(),comp());
 
-        vector<stripe> &Sleft,
-        vector<stripe> &Sright,
+        vector<stripe> Sleft,Sright;
         copy(Sx1,P,x_ext.bottom,xm,Sleft);
         copy(Sx2,P,x_ext.bottom,xm,Sright);
         
         
         //blacken
 
-        set_difference(Rx2.begin(), Rx2.end(), LR.begin(), LR.end(), R.begin(), comp); 
+        set_difference(Rx2.begin(), Rx2.end(), LR.begin(), LR.end(), R.begin(), comp()); 
         blacken(Sleft, R);
-        set_difference(Lx1.begin(), Lx1.end(), LR.begin(), LR.end(), R.begin(), comp); 
+        set_difference(Lx1.begin(), Lx1.end(), LR.begin(), LR.end(), R.begin(), comp()); 
         blacken(Sright, R);
-        
         
         //concat results
 
@@ -338,7 +329,7 @@ set<stripe> rectangle_dac(vector<rectangle> R)
 
     vector<interval> L,Rt;
     vector<stripe> S;
-    vector<vector<int>> P;
+    vector<cord> P;
     Stripes(VRX, base, L, Rt, S, P); // check return type
     
 }
