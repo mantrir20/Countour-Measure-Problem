@@ -123,9 +123,24 @@ struct comp2_P{
     }
 };
 
+struct cmp_stripe{
+    bool operator()(const stripe &a, const stripe &b){
+        if(a.y_inter.bottom.x<b.y_inter.bottom.x || (a.y_inter.bottom.x==b.y_inter.bottom.x && a.y_inter.top.x<b.y_inter.top.x ))
+            return true;
+        return false;
+    }
+};
+struct cmp_stripe2{
+    bool operator()(const stripe &a, const stripe &b){
+        if(a.y_inter.top.x<b.y_inter.top.x || (a.y_inter.top.x==b.y_inter.top.x && a.y_inter.bottom.x<b.y_inter.bottom.x ))
+            return true;
+        return false;
+    }
+};
+
 // copy(Sx1,P,x_ext.bottom,xm,Sleft);
-void copy(vector<stripe> &Sx1, vector<vector<int>> &P,cord bottom,int xm, vector<stripe> &Sleft){
-    vector <stripe> Sprime;
+void copy(vector<stripe> Sx1, vector<vector<int>> &P,cord bottom,int xm, vector<stripe> &Sleft){
+    //vector <stripe> Sprime;
     interval Ix;
     Ix.bottom = bottom;
     Ix.top.cord.x = xm;
@@ -134,10 +149,21 @@ void copy(vector<stripe> &Sx1, vector<vector<int>> &P,cord bottom,int xm, vector
         stripe strp;
         strp.x_inter = Ix;
         strp.y_inter = intv;
-        Sprime.push_back(strp);
+        Sleft.push_back(strp);
     }
-    for(auto sdash:Sprime){
-
+    sort(Sx1.begin(),Sx1.end(),cmp_stripe);
+    sort(Sleft.begin(),Sleft.end(),cmp_stripe);
+    for(auto sdash:Sleft){
+        // sdash.y_inter.bottom >=  sdash.y_inter.top <=
+        auto it = upper_bound(Sx1.begin(),Sx1.end(),sdash.y_inter.bottom.x,cmp_stripe);
+        while(prev(it)!=NULL && prev(it)->y_inter.bottom.x==sdash.y_inter.bottom.x)
+            it = prev(it);
+        auto it2 = upper_bound(it,Sx1.end(),sdash.y_inter.top.x,cmp_stripe2); // NOT SURE IF THIS COMPARATOR WORKS FINE and 
+                                                                            // if the above while loop is required because it messes complexity
+        if(it>it2) continue;
+        else{
+            sdash.x_union = it->x_union;
+        }
     }
 }
 
