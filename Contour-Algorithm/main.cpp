@@ -35,7 +35,7 @@ typedef struct edge_type{
 typedef struct edge{
     interval inter; // length
     cord cordinate; // x coord 
-    edge_type e_type; // l R B T
+    edge_type e_type; // L R B T
 }edge;
 
 typedef struct stripe{
@@ -44,16 +44,12 @@ typedef struct stripe{
     vector <interval> x_union;
 }stripe;
 
-set<point> union_ret(set<rectangle> R)
-{
-
-}
-
 struct cmp{
     bool operator()(cord a, cord y){
         return a.x<y.x;
     }
 };
+
 vector<cord> y_set(vector <rectangle> R){
     vector<cord> cord_set_vector;
     set <cord,cmp> cord_set;
@@ -90,13 +86,6 @@ vector<interval> partition(vector<cord> Y){
     return interval_set;
 }
 
-set<cord> x_proj(set<point> p){
-
-}
-
-set<interval> intervals(set<cord> c){
-
-}
 
 typedef struct newPtype{
     int aext,b,c,dext;
@@ -153,20 +142,40 @@ void copy(vector<stripe> Sx1, vector<cord> &P,cord bottom,int xm, vector<stripe>
     }
 }
 
-bool interval_subset(interval i1, interval i2){
-    if( (i2.bottom.x <= i1.bottom.x) && (i2.top.x >=i1.top.x) ) 
+// bool interval_subset(interval i1, interval i2){
+//     if( (i2.bottom.x <= i1.bottom.x) && (i2.top.x >=i1.top.x) ) 
+//         return true;
+//     return false; 
+// }
+
+bool interval_subset(stripe S1, stripe S2){
+
+    if( (S1.y_inter.bottom.x <= S1.y_inter.bottom.x) && (S2.y_inter.top.x >= S2.y_inter.top.x) ) 
         return true;
     return false; 
 }
 
+//Comparator to sort the stripes using y_inter
+bool comparatorSort_yinter(stripe S1, stripe S2){
+    if(S1.y_inter.bottom.x < S2.y_inter.bottom.x) 
+        return true;
+    if(S1.y_inter.bottom.x == S2.y_inter.bottom.x && S1.y_inter.top.x < S2.y_inter.top.x) 
+        return true;
+    return false;
+}
+
 void blacken(vector<stripe> &S, vector<interval> &J){
-    for(int i=0;i < S.size();i++){
-        for(int j=0; j < J.size(); j++){
-            if(interval_subset(S[i].y_inter, J[i])){
-                S[i].x_union.push_back(S[i].x_inter); // Doubt if it is push pack or clear and push_back
-            }
-        }
+
+    sort(S.begin(), S.end(), comparatorSort_yinter);
+    for(int i=0; i < J.size(); i++){
+        stripe testBlacken; //to get the lower bound limits
+        testBlacken.y_inter.bottom = J[i].bottom;
+        testBlacken.y_inter.top =  J[i].top;
+        //auto it = lower_bound(S.begin(), S.end, testBlacken, interval_subset)
     }
+}
+
+set<cord> x_proj(set<point> p){
 }
 
 struct comp{
@@ -197,9 +206,7 @@ void Stripes(vector<edge> V, interval x_ext, vector<interval> &L,
             L.push_back(V[0].inter);
         }
         else
-        {
             R.push_back(V[0].inter);
-        }
 
         cord c1,c2,c3,c4;
         c1.x = INT_MIN; c2.x = V[0].inter.bottom.x; c3.x = V[0].inter.top.x; c4.x = INT_MAX; 
@@ -299,20 +306,18 @@ void Stripes(vector<edge> V, interval x_ext, vector<interval> &L,
         
         //concat results
 
+
     }
 }
 
-set<stripe> rectangle_dac(vector<rectangle> R)
-{
-    vector<edge> VRX;
-    for(int i=0;i < R.size(); i++)
-    {
+vector <stripe> rectangle_dac(vector<rectangle> R, vector <edge> &VRX){
+    
+    for(int i=0;i < R.size(); i++){
         edge e1;
         e1.inter.bottom = R[i].y_bottom;
         e1.inter.top = R[i].y_top;
         e1.cordinate = R[i].x_left;
         e1.e_type.type = 0;
-
 
         edge e2;
         e2.inter.bottom = R[i].y_bottom;
@@ -332,4 +337,106 @@ set<stripe> rectangle_dac(vector<rectangle> R)
     vector<cord> P;
     Stripes(VRX, base, L, Rt, S, P); // check return type
     
+    return S;
+}
+
+
+
+bool interval_sort_cmp (interval a, interval b){
+    if(a.bottom.x<b.bottom.x || (a.bottom.x==b.bottom.x && a.top.x<b.top.x))
+        return true;
+    return false;
+}
+
+interval union_intervals(vector <interval> x_union){
+    interval fin;
+    int ymin = INT_MAX, ymax = INT_MIN;
+    for(auto intrv:x_union){
+        ymin = min(ymin,intrv.bottom.x);
+        ymax = max(ymax,intrv.top.x);
+    }
+    fin.bottom.x = ymin;
+    fin.top.x = ymax;
+    return fin;
+}
+
+void intervals(edge h, stripe s,vector <interval> &J){
+    interval sx_union = union_intervals(s.x_union);
+    // intersection of h.x_interval and sx_union
+    interval intersection;
+    intersection.bottom.x = max(sx_union.bottom.x,h.inter.bottom.x);
+    intersection.top.x = min(sx_union.top.x,h.inter.top.x);
+
+    if(h.inter.bottom.x<=intersection.bottom.x && h.inter.top.x>=intersection.top.x){
+        interval i1,i2;
+        i1.bottom.x = h.inter.bottom.x;
+        i1.top.x = intersection.bottom.x;
+        i2.bottom.x = intersection.top.x;
+        i2.top.x = h.inter.top.x;
+        J.push_back(i1); J.push_back(i2);
+    }
+    else if(h.inter.bottom.x>intersection.bottom.x && h.inter.top.x>intersection.top.x){
+        interval i1;
+        i1.bottom.x = intersection.top.x;
+        i1.top.x = h.inter.top.x;
+        J.push_back(i1);
+    }
+    else if(h.inter.bottom.x<intersection.bottom.x && h.inter.top.x<intersection.top.x){
+        interval i1;
+        i1.bottom.x = h.inter.bottom.x;
+        i1.top.x = intersection.bottom.x;
+        J.push_back(i1);
+    }
+    else return;
+}
+void contour_pieces(edge h, vector<stripe> S){
+    stripe s;
+    if(h.e_type.type==2){
+        for(auto strp:S){
+            if(strp.y_inter.top.x == h.cordinate.x){
+                s = strp;
+                break;
+            }
+        }
+    }
+    else{
+        for(auto strp:S){
+            if(strp.y_inter.bottom.x  == h.cordinate.x){
+                s = strp;
+                break;
+            }
+        }
+    }
+    vector <interval> J;
+    intervals(h,s,J);
+    vector<line_segment> contour_pieces;
+    for(auto intrv:J){
+        line_segment LS;
+        LS.inter = intrv;
+        LS.cordinate = h.cordinate;
+        contour_pieces.push_back(LS);
+    }
+}
+int main(){
+    // cout << "Starting..\n";
+    int n;
+    cout << "Number of Rectangles?\n";
+    cin >> n;
+    cout << "Enter L R B T\n";
+    vector <rectangle> R;
+    int x1,x2,y1,y2;
+    for(int i=0;i<n;i++){
+        cin >> x1 >> x2 >> y1 >> y2;
+        rectangle newR;
+        newR.x_left.x = x1;
+        newR.x_right.x = x2;
+        newR.y_bottom.x = y1;
+        newR.y_top.x = y2;
+        R.push_back(newR);
+    }
+    vector <edge> VRX;
+    vector <stripe> S = rectangle_dac(R,VRX);
+    for(auto edg: VRX){
+        contour_pieces(edg,S);
+    }
 }
