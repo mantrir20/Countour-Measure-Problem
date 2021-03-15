@@ -245,6 +245,8 @@ vector<stripe_contour> concat(vector<stripe_contour> &S1, vector<stripe_contour>
             it->tree.empty = true;
         }
     }
+
+    return S;
 }
 
 set<cord> x_proj(set<point> p){
