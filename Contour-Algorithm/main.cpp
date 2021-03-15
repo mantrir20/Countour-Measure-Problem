@@ -416,6 +416,8 @@ void intervals(edge h, stripe s,vector <interval> &J){
     }
     else return;
 }
+
+vector<line_segment> cpieces;
 void contour_pieces(edge h, vector<stripe> S){
     stripe s;
     if(h.e_type.type==2){
@@ -436,7 +438,6 @@ void contour_pieces(edge h, vector<stripe> S){
     }
     vector <interval> J;
     intervals(h,s,J);
-    vector<line_segment> contour_pieces;
     for(auto intrv:J){
         line_segment LS;
         LS.inter = intrv;
@@ -465,5 +466,18 @@ int main(){
     vector <stripe> S = rectangle_dac(R,VRX);
     for(auto edg: VRX){
         contour_pieces(edg,S);
+    }
+    sort(cpieces.begin(),cpieces.end(),cmp_cpieces);
+    int clength_top_bottom = 0;
+    int clength_left_right = 0;
+    unordered_map <pair<int,int>,int> mp;
+    for(auto ls:cpieces){
+        x1 = ls.inter.bottom.x;
+        x2 = ls.inter.top.x;
+        y1 = y2 = ls.cordinate.x;
+        clength_top_bottom += x1-x2;
+        if(mp.find({x1,x2})!=mp.end()){ // vertical edge contour
+            clength_left_right =  clength_left_right + (2*(y1 - mp[{x1,x2}]));
+        }
     }
 }
