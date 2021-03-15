@@ -196,10 +196,55 @@ void blacken(vector<stripe_contour> &S, vector<interval> &J){
     }
 }
 
+bool interval_match(interval i1, interval i2){
+
+    if( (i1.bottom.x == i2.bottom.x) && (i1.top.x == i2.top.x) ) 
+        return true;
+    return false; 
+} 
+
 vector<stripe_contour> concat(vector<stripe_contour> &S1, vector<stripe_contour> &S2, vector<cord> &P, interval x_int){
 
     vector<stripe_contour> S;
-    
+    vector<interval> Iy = partition(P);
+    for(auto it = Iy.begin(); it != Iy.end(); it++){
+        stripe_contour temp;
+        temp.x_interval.bottom.x = x_int.bottom.x;  //temp.x_interval = x_int
+        temp.x_interval.top.x = x_int.top.x;
+        temp.y_interval.bottom.x = it->bottom.x;    //temp.y_interval = Iy(i)
+        temp.y_interval.top.x = it->top.x;
+        S.push_back(temp);
+    }
+
+    for(auto it = S.begin(); it != S.end(); it++){
+        
+        interval testConcat;
+        testConcat.bottom.x = it->y_interval.bottom.x; 
+        testConcat.top.x = it->y_interval.top.x;
+
+        auto pointer1 = lower_bound(S1.begin(), S1.end(), testConcat, interval_match);
+        auto pointer2 = lower_bound(S2.begin(), S2.end(), testConcat, interval_match);
+
+        if(pointer1 != S1.end() && pointer2 != S2.end() && pointer1->tree.empty == false && pointer2->tree.empty == false && pointer1->tree != pointer2->tree){
+            it->tree.empty = false;
+            it->tree.side = 2; // undef
+            it->tree.x = x_int.top.x;
+            it->tree.lson = pointer1->tree;
+            it->tree.rson = pointer2->tree;
+        }
+
+        if(pointer1 != S1.end() && pointer2 != S2.end() && pointer1->tree.empty == false && pointer2->tree.empty == true){
+            it->tree = pointer1->tree;
+        }
+
+        if(pointer1 != S1.end() && pointer2 != S2.end() && pointer1->tree.empty == true && pointer2->tree.empty == false ){
+            it->tree = pointer2->tree;
+        }
+
+        if(pointer1 != S1.end() && pointer2 != S2.end() && pointer1->tree.empty == true && pointer2->tree.empty == true){
+            it->tree.empty = true;
+        }
+    }
 }
 
 set<cord> x_proj(set<point> p){
