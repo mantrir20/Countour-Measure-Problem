@@ -44,6 +44,24 @@ typedef struct stripe{
     vector <interval> x_union;
 }stripe;
 
+typedef struct lru{
+    int val; //0,1,2 ==> left, right, undef
+}lru;
+
+typedef struct ctree{
+    bool empty = false;
+    float x;
+    lru side;
+    ctree lson;
+    ctree rson;
+}ctree;
+
+typedef struct stripe_contour{
+    interval x_interval;
+    interval y_interval;
+    ctree tree;
+}stripe_contour;
+
 struct cmp{
     bool operator()(cord a, cord y){
         return a.x<y.x;
@@ -148,31 +166,40 @@ void copy(vector<stripe> Sx1, vector<cord> &P,cord bottom,int xm, vector<stripe>
 //     return false; 
 // }
 
-bool interval_subset(stripe S1, stripe S2){
+bool interval_subset(interval i1, interval i2){
 
-    if( (S1.y_inter.bottom.x <= S1.y_inter.bottom.x) && (S2.y_inter.top.x >= S2.y_inter.top.x) ) 
+    if( (i1.bottom.x <= i2.bottom.x) && (i1.top.x >= i2.top.x) ) 
         return true;
     return false; 
 }
 
-//Comparator to sort the stripes using y_inter
-bool comparatorSort_yinter(stripe S1, stripe S2){
-    if(S1.y_inter.bottom.x < S2.y_inter.bottom.x) 
-        return true;
-    if(S1.y_inter.bottom.x == S2.y_inter.bottom.x && S1.y_inter.top.x < S2.y_inter.top.x) 
-        return true;
+bool comparatorSort_interval(interval i1, interval i2)
+{
+    if(i1.bottom.x < i2.bottom.x) return true;
+    if(i1.bottom.x == i2.bottom.x && i1.top.x < i2.top.x) return true;
     return false;
 }
 
-void blacken(vector<stripe> &S, vector<interval> &J){
+void blacken(vector<stripe_contour> &S, vector<interval> &J){
+    
+    sort(J.begin(), J.end(), comparatorSort_interval);
+    for(int i=0;i < S.size(); i++){
 
-    sort(S.begin(), S.end(), comparatorSort_yinter);
-    for(int i=0; i < J.size(); i++){
-        stripe testBlacken; //to get the lower bound limits
-        testBlacken.y_inter.bottom = J[i].bottom;
-        testBlacken.y_inter.top =  J[i].top;
-        //auto it = lower_bound(S.begin(), S.end, testBlacken, interval_subset)
+        interval testBlacken; //to get the lower bound limits
+        testBlacken.bottom.x = S[i].y_interval.bottom.x;
+        testBlacken.top.x = S[i].y_interval.top.x;
+
+        auto it = lower_bound(J.begin(), J.end(), testBlacken, interval_subset);
+        if(it != J.end()){
+            S[i].tree.empty = true;
+        }
     }
+}
+
+vector<stripe_contour> concat(vector<stripe_contour> &S1, vector<stripe_contour> &S2, vector<cord> &P, interval x_int){
+
+    vector<stripe_contour> S;
+    
 }
 
 set<cord> x_proj(set<point> p){
