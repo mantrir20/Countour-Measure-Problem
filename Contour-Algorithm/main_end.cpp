@@ -464,16 +464,12 @@ void Stripes(vector<edge> V, interval x_ext, vector<interval> &L,vector<interval
         vector<interval> LR = Intervals_intersection(Lx1,Rx2);
         vector<interval> Lm = Intervals_subtraction(Lx1,LR);
         L = Intervals_union(Lm,Lx2);
-
-        set_difference(Lx2.begin(), Lx2.end(), LR.begin(), LR.end(),
-            L.begin(), comp()); 
-        set_union(L.begin(),L.end(),Lx2.begin(),Lx2.end(),L.begin(),comp());
-
-        set_difference(Rx2.begin(), Rx2.end(), LR.begin(), LR.end(),
-            R.begin(), comp()); 
-        set_union(Rx1.begin(),Rx1.end(),R.begin(),R.end(),R.begin(),comp());
-
-        set_union(Rx1.begin(),Rx1.end(),R.begin(),R.end(),R.begin(),comp());
+        
+        Lm = Intervals_subtraction(Rx2,LR);
+        L = Intervals_union(Rx1,Lm);
+        
+        // P1 U P2
+        P = cords_union(Px1,Px2);
 
         vector<stripe> Sleft,Sright;
         copy(Sx1,P,x_ext.bottom,xm,Sleft);
@@ -481,10 +477,9 @@ void Stripes(vector<edge> V, interval x_ext, vector<interval> &L,vector<interval
         
         
         //blacken
-
-        set_difference(Rx2.begin(), Rx2.end(), LR.begin(), LR.end(), R.begin(), comp()); 
-        blacken(Sleft, R);
-        set_difference(Lx1.begin(), Lx1.end(), LR.begin(), LR.end(), R.begin(), comp()); 
+        Lm = Intervals_subtraction(Rx2,LR);
+        blacken(Sleft, Lm);
+        Lm = Intervals_subtraction(Lx1,LR);
         blacken(Sright, R);
         
         //concat results
