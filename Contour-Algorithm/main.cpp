@@ -52,8 +52,8 @@ typedef struct ctree{
     bool empty = false;
     float x;
     lru side;
-    ctree lson;
-    ctree rson;
+    ctree *lson;
+    ctree *rson;
 }ctree;
 
 typedef struct stripe_contour{
