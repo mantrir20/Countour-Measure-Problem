@@ -38,12 +38,6 @@ typedef struct edge{
     edge_type e_type; // L R B T
 }edge;
 
-typedef struct stripe{
-    interval x_inter;
-    interval y_inter;
-    vector <interval> x_union;
-}stripe;
-
 typedef struct lru{
     int val; //0,1,2 ==> left, right, undef
 }lru;
@@ -112,10 +106,6 @@ vector<interval> partition(vector<cord> Y){
     }
     return interval_set;
 }
-
-typedef struct newPtype{
-    int aext,b,c,dext;
-}newPtype;
 
 bool cmp_stripe(stripe_contour a, stripe_contour b){
         if(a.y_inter.bottom.x<b.y_inter.bottom.x || (a.y_inter.bottom.x==b.y_inter.bottom.x && a.y_inter.top.x<b.y_inter.top.x ))
