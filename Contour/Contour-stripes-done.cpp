@@ -46,7 +46,7 @@ typedef struct lru{
 
 typedef struct ctree{
     bool empty;
-    float x;
+    int x;
     lru side;
     ctree *lson;
     ctree *rson;
@@ -59,6 +59,9 @@ typedef struct ctree{
     }  
     ctree(bool x){
         empty = true;
+        lson = NULL;
+        rson = NULL;
+        x = 777;
     }
 }ctree;
 
@@ -93,13 +96,13 @@ bool cmp_edge(edge a, edge b){
 }
 
 bool stripe_subset(stripe_contour s1, stripe_contour s2){
-    if((s1.y_inter.bottom.x <= s2.y_inter.bottom.x) && (s1.y_inter.top.x >= s2.y_inter.top.x)) 
+    if((s1.y_inter.bottom.x >= s2.y_inter.bottom.x) && (s1.y_inter.top.x <= s2.y_inter.top.x)) 
         return true;
     return false; 
 }
 
 bool interval_subset(interval i1, interval i2){
-    if((i1.bottom.x <= i2.bottom.x) && (i1.top.x >= i2.top.x)) 
+    if((i1.bottom.x >= i2.bottom.x) && (i1.top.x <= i2.top.x)) 
         return true;
     return false; 
 }
@@ -145,10 +148,10 @@ vector<interval> partition(vector<cord> Y){
     return interval_set;
 }
 
-void copy(vector<stripe_contour> Sx1, vector<cord> &P,cord bottom,int xm, vector<stripe_contour> &Sleft){
-    cout << "****************************Copy Started********************************" << endl;
+void copy(vector<stripe_contour> Sx1, vector<cord> &P, int leftx, int xm, vector<stripe_contour> &Sleft){
+    cout << "**********Copy Started************" << endl;
     interval Ix;
-    Ix.bottom = bottom; Ix.top.x = xm;
+    Ix.bottom.x = leftx; Ix.top.x = xm;
     vector <interval> all_Iy = partition(P);
     for(auto intv:all_Iy){
         stripe_contour strp;
@@ -161,37 +164,39 @@ void copy(vector<stripe_contour> Sx1, vector<cord> &P,cord bottom,int xm, vector
     for(auto sdash:Sleft){
         for(auto inner:Sx1){
             if(stripe_subset(sdash,inner)){
-                cout<<"Inside if \n";
+                cout << "Inside if \n";
                 sdash.tree = inner.tree;
-                cout << "Tree Node = " << sdash.tree->x << endl;;
+                cout << "Tree Node = " << sdash.tree->x << endl;
+                break;
             }
         }
         stripe_to_ret.push_back(sdash);
-        // auto it = lower_bound(Sx1.begin(), Sx1.end(), sdash, stripe_subset);
-        // if(it!=Sx1.end()) sdash.tree = (*it).tree;
+        //auto it = lower_bound(Sx1.begin(), Sx1.end(), sdash, stripe_subset);
+        //if(it!=Sx1.end()) sdash.tree = (*it).tree;
     }
-    cout<<"%%%%%%%%% After Loop %%%%%%%%%%% \n";
-    for(auto i: stripe_to_ret){
+    cout<<"After Loop\n";
+    for(auto i: stripe_to_ret)
         cout<<"y_inter: "<<"["<<i.y_inter.bottom.x<<","<<i.y_inter.top.x<<"]"<<endl;
-    }
     Sleft.clear();
     Sleft=stripe_to_ret;
-    cout << "****************************Copy Complted********************************" << endl;
+    cout << "*****Copy Completed******" << endl;
 }
 
 void blacken(vector<stripe_contour> &S, vector<interval> &J){
-    cout<<"blacken \n";
+    cout << "Blacken \n";
     sort(J.begin(), J.end(), comparatorSort_interval);
     sort(S.begin(), S.end(), comparatorSort_yinter);
     for(int i=0; i < S.size(); i++){
-        stripe_contour testBlacken; //to get the lower bound limits
-        testBlacken.y_inter.bottom = S[i].y_inter.bottom;
-        testBlacken.y_inter.top =  S[i].y_inter.top;
-        testBlacken.tree = new ctree(true);
-        auto it = lower_bound(J.begin(), J.end(), testBlacken.y_inter, interval_subset);
-        if(it != J.end()){
-            S[i].tree->empty = true;
+        for(auto intv:J){
+            if(interval_subset(S[i].y_inter,intv)){
+                S[i].tree = new ctree(true);
+                break;
+            }
         }
+        // auto it = lower_bound(J.begin(), J.end(), testBlacken.y_inter, interval_subset);
+        // if(it != J.end()){
+        //     S[i].tree->empty = true;
+        // }
     }
 }
 
@@ -217,9 +222,7 @@ vector<stripe_contour> concat(vector<stripe_contour> S1, vector<stripe_contour> 
     vector<stripe_contour> ans;
     for(auto strp:S){
         stripe_contour st1;
-        st1.tree = new ctree(true);
         stripe_contour st2;
-        st2.tree = new ctree(true);
         for(auto strp1:S1){
             if(strp1.y_inter.top.x==strp.y_inter.top.x && strp1.y_inter.bottom.x==strp.y_inter.bottom.x){
                 st1 = strp1;
@@ -232,17 +235,21 @@ vector<stripe_contour> concat(vector<stripe_contour> S1, vector<stripe_contour> 
                 break;
             }
         }
-        if(st1.tree->empty==false && st2.tree->empty==false){
-            strp.tree->x = st1.x_inter.top.x;
+        if(st1.tree->empty==false && st2.tree->empty==false && st1.tree!=st2.tree){
+            strp.tree->x = st1.x_inter.top.x; 
+            cout << "Concat me tree has x = " << strp.tree->x << "\n";
             strp.tree->side.val = 2;
             strp.tree->lson = st1.tree;
             strp.tree->rson = st2.tree;
+            strp.tree->empty=false;
         }
         else if(st1.tree->empty==false && st2.tree->empty==true){
             strp.tree = st1.tree;
+            cout << "Concat me tree has x = " << strp.tree->x << "\n";
         }
         else if(st1.tree->empty==true && st2.tree->empty==false){
             strp.tree = st2.tree;
+            cout << "Concat me tree has x = " << strp.tree->x << "\n";
         }
         else strp.tree->empty = true;
         ans.push_back(strp);
@@ -250,6 +257,22 @@ vector<stripe_contour> concat(vector<stripe_contour> S1, vector<stripe_contour> 
     return ans;
 }
 
+struct cmpx{
+    bool operator()(cord a, cord b){
+        return a.x < b.x;    
+    }
+};
+vector<cord> cords_union(vector<cord> A, vector<cord> B){
+    set<cord,cmpx> un;
+    vector <cord> ans;
+    for(auto c:A)
+        un.insert(c);
+    for(auto c:B)
+        un.insert(c);
+    for(auto c:un)
+        ans.push_back(c);
+    return ans;
+}
 struct comp{
     bool operator()(const interval &i,const interval &j){ 
         if(i.bottom.x<j.bottom.x || (i.bottom.x==j.bottom.x && i.top.x<j.top.x))
@@ -359,22 +382,7 @@ vector <interval> Intervals_subtraction(vector<interval> arrA, vector<interval> 
     return ans;
 }
 
-struct cmpx{
-    bool operator()(cord a, cord b){
-        return a.x < b.x;    
-    }
-};
-vector<cord> cords_union(vector<cord> A, vector<cord> B){
-    set<cord,cmpx> un;
-    vector <cord> ans;
-    for(auto c:A)
-        un.insert(c);
-    for(auto c:B)
-        un.insert(c);
-    for(auto c:un)
-        ans.push_back(c);
-    return ans;
-}
+
 vector <interval> Intervals_intersection(vector<interval> arr1, vector<interval> arr2) { 
     cout << "In intersection\n";
     if(arr1.empty())
@@ -401,14 +409,14 @@ vector <interval> Intervals_intersection(vector<interval> arr1, vector<interval>
     return ans;
 } 
 
-
+vector<stripe_contour> answer_stripes;
 void Stripes(vector<edge> V, interval x_ext, vector<interval> &L,vector<interval> &R,vector<stripe_contour> &S,vector<cord> &P){
     vector<interval> Lx1,Lx2,Rx1,Rx2;
     vector<stripe_contour> Sx1,Sx2;
     vector<cord> Px1,Px2;
     counter ++; 
     cout << "Inside Stripe call no = " << counter << "\n";
-    cout<<"Stripes, x_ext recieved as:["<<x_ext.bottom.x<<","<<x_ext.top.x<<"]"<<endl;
+    cout << "Stripes, x_ext recieved as:["<<x_ext.bottom.x<<","<<x_ext.top.x<<"]"<<endl;
     getchar();
     interval x_ext_save;
     cout << "V size = " << V.size() << "\n";
@@ -428,28 +436,28 @@ void Stripes(vector<edge> V, interval x_ext, vector<interval> &L,vector<interval
         for(auto intrv:tmp_intrv){
             stripe_contour s1;
             s1.x_inter = x_ext;
-            s1.y_inter = intrv; // TO DO  
-            cout << "After Partition Top and bottom are - " << intrv.bottom.x << " " << intrv.top.x <<  endl; 
+            s1.y_inter = intrv; 
+            cout << "After Partition bottom and top are - " << intrv.bottom.x << " " << intrv.top.x <<  endl; 
             s1.tree = new ctree(true);
             S.push_back(s1);
         }
-
         cout<<"After partition in Base case \n";
-        for(int i=0; i< S.size(); i++){
+        for(int i=0; i<S.size(); i++){
             if(S[i].y_inter.bottom.x == V[0].inter.bottom.x  && S[i].y_inter.top.x == V[0].inter.top.x ){
                 if(V[0].e_type.type == 0){
-                  //interval int1;int1.bottom = V[0].cordinate;int1.top = x_ext.top; S[i].x_union = vector<interval>{int1}; // B
-                  S[i].tree = new ctree((float)V[0].cordinate.x, 0); // left
-                    cout << "Create tree in base case 1\n";
+                  cout << "V[0].cordinate.x is " << V[0].cordinate.x << "\n";
+                  S[i].tree = new ctree(V[0].cordinate.x, 0); // left
+                  cout << "Create tree in base case 1\n";
                 }
                 else{
-                    S[i].tree = new ctree((float)V[0].cordinate.x, 1); // right
+                    cout << "V[0].cordinate.x is " << V[0].cordinate.x << "\n";
+                    S[i].tree = new ctree(V[0].cordinate.x, 1); // right
                     cout << "Create tree in base case 2\n";
                 }
             }
         }
         counter--;
-        cout<<"Returning base case "<<counter<<" \n";
+        cout << "Returning base case " << counter <<" \n";
     }
     else{
         // Divide
@@ -491,20 +499,23 @@ void Stripes(vector<edge> V, interval x_ext, vector<interval> &L,vector<interval
         sort(Rx1.begin(),Rx1.end(),comp()); sort(Rx2.begin(),Rx2.end(),comp());
         sort(Px2.begin(),Px2.end(),comp2_P); sort(Px1.begin(),Px1.end(),comp2_P);
         sort(Sx1.begin(),Sx1.end(),cmp_stripe); sort(Sx2.begin(),Sx2.end(),cmp_stripe);
-        cout<<"Before Set operations inside stripes \n";
+        cout << "Before Set operations inside stripes \n";
         vector<interval> LR = Intervals_intersection(Lx1,Rx2);
-        cout<<"AFTER Set operations inside stripes \n";
+        cout << "LR Size: "<<LR.size()<<endl;
         vector<interval> Lm = Intervals_subtraction(Lx1,LR);
-        cout<<"Subtraction worked \n";
-        cout<<"Lm Size: "<<Lm.size()<<endl;
+        cout << "Lm Size: "<<Lm.size()<<endl;
         L = Intervals_union(Lm,Lx2);
-        cout<<"After intervals \n";
+        cout << "L Size: "<<L.size()<<endl;
+        cout << "After intervals \n";
         Lm = Intervals_subtraction(Rx2,LR);
+        cout << "R2-LR Size: "<<Lm.size()<<endl;
         R = Intervals_union(Rx1,Lm);
+        cout << "R Size : " << R.size() <<endl;
         P = cords_union(Px1,Px2);
+        cout << "P Size : " << P.size() << endl;
         vector<stripe_contour> Sleft,Sright;
-        copy(Sx1,P,x_ext.bottom,xm,Sleft);
-        copy(Sx2,P,x_ext.bottom,xm,Sright);
+        copy(Sx1,P,x_ext.bottom.x,xm,Sleft);
+        copy(Sx2,P,xm,x_ext.top.x,Sright);
         cout<<"After copy (Sleft): \n";
         for(auto i: Sleft)
             cout<<"y_inter: ["<<i.y_inter.bottom.x<<", "<<i.y_inter.top.x<<"]"<<endl; 
@@ -527,12 +538,14 @@ void Stripes(vector<edge> V, interval x_ext, vector<interval> &L,vector<interval
         vector<stripe_contour> S_ret;
         S.clear();
         S = concat(Sleft,Sright,P,x_ext);
+        answer_stripes.clear();
+        answer_stripes = S;
         cout<<"After concat: \n";
         for(auto i: S)
             cout<<"y_inter: ["<<i.y_inter.bottom.x<<", "<<i.y_inter.top.x<<"]"<<endl;
         counter--;
         cout << "Retuning from Stripes Case 2" << counter <<"..............................................." <<'\n';
-        // answer in S*/
+        // answer in S
     }
 }
 
@@ -571,24 +584,24 @@ bool interval_sort_cmp (interval a, interval b){
     return false;
 }
 
-// TO DO
 vector <int> ass;
 void union_intervals(ctree *tree){
     if(tree==NULL) return;
-    else if(tree->lson==NULL && tree->rson==NULL){
-        cout << "Pushing " << tree->x << "\n";
-        ass.push_back((int)tree->x);
-    }
-    else{
-        union_intervals(tree->lson);
-        union_intervals(tree->rson);
-    }
+    cout << "Pushing " << tree->x << "\n";
+    ass.push_back(tree->x);
+    cout << "LEFT\n";
+    union_intervals(tree->lson);
+    cout << "RIGHT\n";
+    union_intervals(tree->rson);
 }
 
 void intervals(edge h, stripe_contour s,vector <interval> &J){
     union_intervals(s.tree);
     vector <interval> uintervals;
     for(int i=0;i<ass.size()-1;i+=2){
+        cout << "ASS inside intervals\n";
+        if(i+1>=ass.size())
+            break;
         interval tmp;
         tmp.bottom.x = ass[i];
         tmp.top.x = ass[i+1];
@@ -599,6 +612,8 @@ void intervals(edge h, stripe_contour s,vector <interval> &J){
     tmp1.push_back(h.inter);
     vector<interval> int_interval = Intervals_intersection(tmp1,uintervals);
     J = Intervals_subtraction(tmp1,int_interval);
+    cout << " J size inside intervals : " << J.size() << "\n";
+    cout << "intervals done\n";
 }
 
 vector<line_segment> cpieces;
@@ -609,7 +624,7 @@ void contour_pieces(edge h, vector<stripe_contour> S){
     if(h.e_type.type==2){
         for(auto strp:S){
             if(strp.y_inter.top.x == h.cordinate.x){
-                cout << "Contour Pieces 1 " ;
+                cout << "Contour Pieces 1  " ;
                 cout << strp.tree->x << endl;
                 vector <interval> J;
                 intervals(h,strp,J);
@@ -620,6 +635,7 @@ void contour_pieces(edge h, vector<stripe_contour> S){
                     cpieces.push_back(LS);
                 }
             }
+            //break;
         }
     }
     else{
@@ -636,6 +652,7 @@ void contour_pieces(edge h, vector<stripe_contour> S){
                     cpieces.push_back(LS);
                 }
             }
+            //break;
         }
     }
     cout << "Contour Pieces End\n" ;
@@ -656,17 +673,6 @@ void create_horizontal_edge(vector<rectangle> R, vector<edge> &VRX_horizontal){
         e2.e_type.type = 3;
         VRX_horizontal.push_back(e1);
         VRX_horizontal.push_back(e2);
-        cout << "## EDGE ADDED ##" << endl;
-        cout << "EDGE BOTTOM = " << e1.inter.bottom.x << endl;
-        cout << "EDGE TOP = " << e1.inter.top.x << endl; 
-        cout << "EDGE Y-Intercept = " << e1.cordinate.x << endl; 
-        cout << "EDGE TYPE = " << e1.e_type.type << "\n";
-        cout << endl;
-        cout << "## EDGE ADDED ##" << endl;
-        cout << "EDGE BOTTOM = " << e2.inter.bottom.x << endl;
-        cout << "EDGE TOP = " << e2.inter.top.x << endl; 
-        cout << "EDGE Y-Intercept = " << e2.cordinate.x << endl; 
-        cout << "EDGE TYPE = " << e2.e_type.type << "\n";
     }
 }
 
@@ -688,34 +694,33 @@ int main(){
     }
     vector <edge> VRX;
     vector <stripe_contour> S = rectangle_dac(R, VRX);
+    S = answer_stripes;
     cout << "Stripes obtained : \n";
     for(auto strp:S){
-        cout << strp.y_inter.bottom.x << " " << strp.y_inter.top.x << " " << "\n";
+        cout << strp.y_inter.top.x << " " << strp.y_inter.bottom.x << " " << "\n";
         cout << strp.x_inter.bottom.x << " " << strp.x_inter.top.x << " " << "\n";    
     }
     vector<edge> VRX_horizontal;
     create_horizontal_edge(R, VRX_horizontal);
     for(auto edg: VRX_horizontal)
         contour_pieces(edg,S);
-    // for(int i=0;i<S.size();i++){
-    //    // cout << S[1].tree->lson->rson;
-    // }
     cout << "*****Printing ass ******" << endl;
     for(int i=0;i<ass.size();i++)
         cout << ass[i] << " ";
+    cout << "\n" << cpieces.size() << "\n";
     cout << endl;
     //sort(cpieces.begin(),cpieces.end(),cpieces);
-    // int clength_top_bottom = 0;
-    // int clength_left_right = 0;
+    int clength_top_bottom = 0;
+    int clength_left_right = 0;
     // map <pair<int,int>,int> mp;
-    // for(auto ls:cpieces){
-    //     cout << ls.inter.bottom.x << " " << ls.inter.top.x << " " << ls.cordinate.x << "\n";
-    //     x1 = ls.inter.bottom.x;
-    //     x2 = ls.inter.top.x;
-    //     y1 = y2 = ls.cordinate.x;
-    //     //clength_top_bottom += x1-x2;
-    //     //if(mp.find({x1,x2})!=mp.end()){ // vertical edge contour
-    //       //  clength_left_right =  clength_left_right + (2*(y1 - mp[{x1,x2}]));
-    //     //}
-    // }
+    for(auto ls:cpieces){
+        cout << ls.inter.bottom.x << " " << ls.inter.top.x << " " << ls.cordinate.x << "\n";
+        // x1 = ls.inter.bottom.x;
+        // x2 = ls.inter.top.x;
+        // y1 = y2 = ls.cordinate.x;
+        //clength_top_bottom += x1-x2;
+        //if(mp.find({x1,x2})!=mp.end()){ // vertical edge contour
+          //  clength_left_right =  clength_left_right + (2*(y1 - mp[{x1,x2}]));
+        //}
+    }
 }
