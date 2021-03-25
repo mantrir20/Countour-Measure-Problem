@@ -1,11 +1,8 @@
 #include<bits/stdc++.h>
-// #include <vector>
-// #include <set>
-#include <algorithm>
 using namespace std;
 
 typedef struct cord{
-    int x;
+    float x;
 }cord;
 
 typedef struct point{
@@ -96,61 +93,66 @@ bool cmp_stripe(stripe a, stripe b){
         return false;
 }
 
-struct cmp_stripe2{
-    bool operator() (const stripe & a, const stripe & b){
-        if(a.y_inter.top.x<b.y_inter.top.x || (a.y_inter.top.x==b.y_inter.top.x && a.y_inter.bottom.x<b.y_inter.bottom.x ))
-             return true;
-         return false;
-    }
-    bool operator() (const stripe & left, int right){
-        return left.y_inter.top.x < right;
-    }
-    bool operator() (int left, const stripe & right){
-        return left < right.y_inter.top.x;
-    }
-};
+// struct cmp_stripe2{
+//     bool operator() (const stripe & a, const stripe & b){
+//         if(a.y_inter.top.x<b.y_inter.top.x || (a.y_inter.top.x==b.y_inter.top.x && a.y_inter.bottom.x<b.y_inter.bottom.x ))
+//              return true;
+//          return false;
+//     }
+//     bool operator() (const stripe & left, int right){
+//         return left.y_inter.top.x < right;
+//     }
+//     bool operator() (int left, const stripe & right){
+//         return left < right.y_inter.top.x;
+//     }
+// };
 
 bool stripe_subset(stripe s1, stripe s2){
     if((s1.y_inter.bottom.x >= s2.y_inter.bottom.x) && (s1.y_inter.top.x <= s2.y_inter.top.x)) 
         return true;
     return false; 
 }
-
-void copy(vector<stripe> Sx1, vector<cord> &P,int bottom,int xm, vector<stripe> &Sleft){
+int bS1(vector<stripe> S,interval test){
+    int l = 0, r = S.size(),mid;
+    if(r==0)
+        return -1;
+    while(l<=r){
+        mid = l+(r-l)/2;
+        if(S[mid].y_inter.bottom.x<=test.bottom.x && S[mid].y_inter.top.x>=test.top.x)
+            return mid;
+        else if(S[mid].y_inter.bottom.x<=test.bottom.x && S[mid].y_inter.top.x<test.top.x)
+            l=mid+1;
+        else r=mid-1;
+    }
+    if(S[mid].y_inter.bottom.x<=test.bottom.x && S[mid].y_inter.top.x>=test.top.x)
+            return mid;
+    return -1;
+}
+void copy(vector<stripe> Sx1, vector<cord> &P,float bottom,float xm, vector<stripe> &Sleft){
     interval Ix;
     Ix.bottom.x = bottom; Ix.top.x = xm;
     vector <interval> all_Iy = partition(P);
     for(auto intv:all_Iy){
         stripe strp;
-        strp.x_inter = Ix; 
-        strp.y_inter = intv;
-        strp.x_measure=0;
-        Sleft.push_back(strp);
+        strp.x_inter = Ix;  strp.y_inter = intv;
+        strp.x_measure=0; Sleft.push_back(strp);
     }
+    sort(Sleft.begin(),Sleft.end(),cmp_stripe); sort(Sx1.begin(),Sx1.end(),cmp_stripe);
     vector<stripe> stripe_to_ret;
     for(auto sdash: Sleft){
         stripe str1;
         str1.x_inter=sdash.x_inter;
         str1.y_inter=sdash.y_inter;
         str1.x_measure=0;
-        for(auto ess: Sx1){
-            if(stripe_subset(sdash, ess)){
-                // cout<<"Inside if \n";
-                // cout<<"Ess.x_measure: "<<ess.x_measure<<endl;
-                str1.x_measure=ess.x_measure;
-                sdash.x_measure=ess.x_measure;    
-            }
+        int ind = bS1(Sx1,sdash.y_inter);
+        if(ind!=-1){
+            str1.x_measure = Sx1[ind].x_measure;
+            sdash.x_measure = Sx1[ind].x_measure;
         }
         stripe_to_ret.push_back(str1);
     }
-    // cout<<"%%%%%%%%% After Loop %%%%%%%%%%% \n";
-    // for(auto i: stripe_to_ret){
-    //     cout<<"y_inter: "<<"["<<i.y_inter.bottom.x<<","<<i.y_inter.top.x<<"]"<<endl;
-    //     cout<<"x_measure: "<<i.x_measure<<endl;
-    // }
     Sleft.clear();
     Sleft=stripe_to_ret;
-
 }
 
 //Compartor to use for lower bound on stripes (for blacken)
@@ -177,6 +179,24 @@ bool comparatorSort_yinter(stripe S1, stripe S2){
     return false;
 }
 
+int bS2(vector<interval> S,interval test){
+    cout << "in bs2\n";
+    int l = 0, r = S.size(),mid;
+    if(r==0)
+        return -1;
+    while(l<=r){
+        mid = l+(r-l)/2;
+        if(S[mid].bottom.x<=test.bottom.x && S[mid].top.x>=test.top.x)
+            return mid;
+        else if(S[mid].bottom.x<=test.bottom.x && S[mid].top.x<test.top.x)
+            l=mid+1;
+        else r=mid-1;
+    }
+    if(S[mid].bottom.x<=test.bottom.x && S[mid].top.x>=test.top.x)
+            return mid;
+    return -1;
+}
+
 vector<stripe> blacken(vector<stripe> S, vector<interval> J){
     cout<<"blacken rcvd\n";
     cout<<"S:\n";
@@ -190,11 +210,9 @@ vector<stripe> blacken(vector<stripe> S, vector<interval> J){
     sort(J.begin(), J.end(), comparatorSort_interval);
     sort(S.begin(), S.end(), comparatorSort_yinter);
     for(int i=0; i < S.size(); i++){
-        for(auto intrv:J){
-            if(interval_subset(S[i].y_inter,intrv)){
-                S[i].x_measure =  S[i].x_inter.top.x - S[i].x_inter.bottom.x;;
-                break; 
-            }
+        int ind = bS2(J,S[i].y_inter);
+        if(ind!=-1){
+            S[i].x_measure = S[i].x_inter.top.x - S[i].x_inter.bottom.x;
         }
     }
     cout<<"^^^^^^^^After Blacken^^^^^"<<endl;
@@ -205,6 +223,29 @@ vector<stripe> blacken(vector<stripe> S, vector<interval> J){
     return S;
 }
 
+int bS3(vector<stripe> S,interval test){
+    cout << "in bS3\n";
+    int l = 0, r = S.size(),mid;
+    if(r==0)
+        return -1;
+    while(l<=r){
+        mid = l+(r-l)/2;
+        if(S[mid].y_inter.bottom.x==test.bottom.x && S[mid].y_inter.top.x==test.top.x)
+            return mid;
+        else if(S[mid].y_inter.bottom.x<test.bottom.x)
+            l=mid+1;
+        else if(S[mid].y_inter.bottom.x>test.bottom.x)
+            r=mid-1;
+        else if(S[mid].y_inter.bottom.x==test.bottom.x && S[mid].y_inter.top.x<test.top.x)
+            l=mid+1;
+        else if(S[mid].y_inter.bottom.x==test.bottom.x && S[mid].y_inter.top.x>test.top.x)
+            r=mid-1;
+        else r=mid-1;
+    }
+    if(S[mid].y_inter.bottom.x==test.bottom.x && S[mid].y_inter.top.x==test.top.x)
+            return mid;
+    return -1;
+}
 
 vector<stripe> concat(vector<stripe> S1, vector<stripe> S2, vector<cord> P, interval x_int){   
     // cout<<"concat \n";
@@ -223,31 +264,18 @@ vector<stripe> concat(vector<stripe> S1, vector<stripe> S2, vector<cord> P, inte
         cout << "strp measure : " << strp.x_measure << "\n";
         stripe st1;
         stripe st2;
-        for(auto strp1:S1){
-            if(strp1.y_inter.top.x==strp.y_inter.top.x && strp1.y_inter.bottom.x==strp.y_inter.bottom.x){
-                st1 = strp1;
-                break;
-            }
+        int ind1 = bS3(S1,strp.y_inter);
+        if(ind1!=-1){
+            st1 = S1[ind1];
         }
-        for(auto strp2:S2){
-            if(strp2.y_inter.top.x==strp.y_inter.top.x && strp2.y_inter.bottom.x==strp.y_inter.bottom.x){
-                st2 = strp2;
-                break;
-            }
+        int ind2 = bS3(S2,strp.y_inter);
+        if(ind2!=-1){
+            st2 = S2[ind2];
         }
         strp.x_measure = st1.x_measure+st2.x_measure;
         cout << "strp measure : " << strp.x_measure << "\n";
         ret.push_back(strp);
     }
-    //for(int i = 0; i < S.size(); i++)
-    	//S[i].x_measure = S1[i].x_measure + S2[i].x_measure;
-
-    // cout<<"^^^^^^^^After Concat^^^^^"<<endl;
-    // for(auto i : S)
-    // {
-    //     cout<<"y_inter: "<<"["<<i.y_inter.bottom.x<<","<<i.y_inter.top.x<<"]"<<endl;
-    //     cout<<"x_measure: "<<i.x_measure<<endl;
-    // }
     return ret;
     
 }
@@ -260,18 +288,15 @@ struct comp{
     }
 };
 
-// TO DO HAI YE COMPLETE NHI
 bool comp2_P(cord a,cord b){
     return a.x<=b.x;
 }
 
 vector <interval> Intervals_union(vector<interval> arr1, vector<interval> arr2){ 
-    if(arr1.size()==0){
+    if(arr1.size()==0)
         return arr2;
-    }
-    else if(arr2.size()==0){
+    if(arr2.size()==0)
         return arr1;
-    }
     vector <interval> arr;
     for(auto intr:arr1)
         arr.push_back(intr);
@@ -305,7 +330,6 @@ vector <interval> Intervals_subtraction(vector<interval> arrA, vector<interval> 
     vector <interval> arr2 = Intervals_union(arrB,temp);
     sort(arr1.begin(),arr1.end(),comp());
     sort(arr2.begin(),arr2.end(),comp());
-    
     int i=0,j=0;
     vector <interval> ans;
     while(i<arr1.size() && j<arr2.size()){
@@ -329,21 +353,14 @@ vector <interval> Intervals_subtraction(vector<interval> arrA, vector<interval> 
             interval int1;
             int1.bottom.x = arr1[i].bottom.x;
             int1.top.x = min(arr2[j].bottom.x,arr1[i].top.x);
-            // i++;
             if(arr1[i].top.x>arr2[j].bottom.x){
                 arr1[i].bottom.x = min(arr1[i].top.x,arr2[j].bottom.x);
             }
-            else{
-                i++;
-            }
+            else i++;
             ans.push_back(int1);
         }
         else if(arr1[i].bottom.x > arr2[j].bottom.x){
-            // interval int1;
-            // int1.bottom.x = arr2[j].bottom.x;
-            // int1.top.x = min(arr1[i].bottom.x,arr2[j].top.x);
             j++;
-            //ans.push_back(int1);
         }
     }
     if(j>=arr2.size()){
@@ -363,8 +380,8 @@ vector <interval> Intervals_intersection(vector<interval> arr1, vector<interval>
     vector <interval> ans;
     int n = arr1.size(), m = arr2.size(); 
     while (i < n && j < m) { 
-        int l = max(arr1[i].bottom.x, arr2[j].bottom.x);  
-        int r = min(arr1[i].top.x, arr2[j].top.x); 
+        float l = max(arr1[i].bottom.x, arr2[j].bottom.x);  
+        float r = min(arr1[i].top.x, arr2[j].top.x); 
         if (l <= r) {
             interval newI;
             newI.bottom.x = l;
@@ -382,15 +399,12 @@ vector <interval> Intervals_intersection(vector<interval> arr1, vector<interval>
 vector<cord> cords_union(vector<cord> P1, vector<cord>P2){
     vector<cord> union_vector;
     set<cord, cmp>union_set;
-    for(auto i: P1){
+    for(auto i: P1)
         union_set.insert(i);
-    }
-    for (auto i: P2){
+    for (auto i: P2)
         union_set.insert(i);
-    }
-    for(auto i: union_set){
+    for(auto i: union_set)
         union_vector.push_back(i);
-    }
     return union_vector;
 }
 
@@ -431,14 +445,12 @@ void Stripes(vector<edge> V, interval x_ext, vector<interval> &L,
                   int1.bottom = V[0].cordinate;
                   int1.top = x_ext.top;
                   S[i].x_measure = x_ext.top.x - V[0].cordinate.x;
-                //   cout<<"S[i].x_measure (left)= "<<x_ext.top.x <<"-"<<V[0].cordinate.x<<"="<<S[i].x_measure<<endl;
                 }
                 else{
                   interval int1;
                   int1.bottom = x_ext.bottom;
                   int1.top = V[0].cordinate;
                   S[i].x_measure = V[0].cordinate.x - x_ext.bottom.x;
-                //   cout<<"S[i].x_measure (right)= "<<V[0].cordinate.x<<"-"<<x_ext.bottom.x<<"="<<S[i].x_measure<<endl;
                 }
             }
         }
@@ -447,13 +459,13 @@ void Stripes(vector<edge> V, interval x_ext, vector<interval> &L,
     else{
         // Divide
         vector<edge> V1,V2;
-        int xm;
+        float xm;
         if(V.size()%2==0)
             xm=((V[V.size()/2].cordinate.x)+ (V[(V.size()/2)-1].cordinate.x))/2;
         else xm=V[V.size()/2].cordinate.x;
         // vector<interval> L1,L2,R1,R2;
         for(int i=0;i<V.size();i++){
-            if(V[i].cordinate.x<=xm)
+            if(V[i].cordinate.x<=xm && V1.size()<(V.size()/2))
                 V1.push_back(V[i]);
             else
                 V2.push_back(V[i]);
@@ -466,11 +478,6 @@ void Stripes(vector<edge> V, interval x_ext, vector<interval> &L,
         intt.top = c1;
         x_ext_save=x_ext;
         Stripes(V1,intt,Lx1,Rx1,Sx1,Px1);
-        // cout<<"After returning from Base Case********************\n";
-        // for(auto i: Sx1){
-        //     cout<<"y_inter: ["<<i.y_inter.bottom.x<<", "<<i.y_inter.top.x<<"]"<<endl;
-        //     cout<<"x_measure: "<<i.x_measure<<endl;    
-        // }
         x_ext=x_ext_save;
         interval intt2;
         cord c2;
@@ -478,12 +485,6 @@ void Stripes(vector<edge> V, interval x_ext, vector<interval> &L,
         intt2.top = x_ext.top;
         intt2.bottom = c2;
         Stripes(V2,intt2,Lx2,Rx2,Sx2,Px2);
-        // cout<<"After returning from Base Case********************\n";
-        // for(auto i: Sx2){
-        //     cout<<"y_inter: ["<<i.y_inter.bottom.x<<", "<<i.y_inter.top.x<<"]"<<endl;
-        //     cout<<"x_measure: "<<i.x_measure<<endl;    
-        // }
-        // Merge to get LR = (L1ANDR2)
         sort(Lx1.begin(),Lx1.end(),comp()); sort(Lx2.begin(),Lx2.end(),comp()); sort(Rx1.begin(),Rx1.end(),comp()); sort(Rx2.begin(),Rx2.end(),comp());
         sort(Px2.begin(),Px2.end(),comp2_P); sort(Px1.begin(),Px1.end(),comp2_P);
         vector<interval> LR = Intervals_intersection(Lx1,Rx2);
@@ -500,20 +501,13 @@ void Stripes(vector<edge> V, interval x_ext, vector<interval> &L,
         Sleft = blacken(Sleft, Lm);
         Lm = Intervals_subtraction(Lx1,LR);
         Sright = blacken(Sright, Lm);
-
         //concat results
         S.clear();
         S = concat(Sleft, Sright, P, x_ext);
-        // cout<<"After concat: \n";
-        // for(auto i: S){
-        //     cout<<"y_inter: ["<<i.y_inter.bottom.x<<", "<<i.y_inter.top.x<<"]"<<endl;
-        //     cout<<"x_measure: "<<i.x_measure<<endl;    
-        // }
     }
 }
 
-vector<stripe> rectangle_dac(vector<rectangle> R){   
-    // cout<<"rectangle_dac \n";
+vector<stripe> rectangle_dac(vector<rectangle> R){
     vector<edge> VRX;
     for(int i=0;i < R.size(); i++){
         edge e1;
@@ -539,13 +533,25 @@ vector<stripe> rectangle_dac(vector<rectangle> R){
     return S;
 }
 
+bool rect_comp(rectangle a, rectangle b){
+    if(a.x_left.x<b.x_left.x)
+        return true;
+    if(a.x_right.x<b.x_right.x)
+        return true;
+    if(a.y_bottom.x<b.y_bottom.x)
+        return true;
+    if(a.y_top.x<b.y_top.x)
+        return true;
+    return false;
+}
+
 int main(){
     int n;
     cout << "Number of Rectangles?\n";
     cin >> n;
     cout << "Enter (x1, y1); (x2, y2)\n";
     vector <rectangle> R;
-    int x1,x2,y1,y2;
+    float x1,x2,y1,y2;
     for(int i=0;i<n;i++){
         cin >> x1 >> x2 >> y1 >> y2;
         rectangle newR;
@@ -555,6 +561,7 @@ int main(){
         newR.y_top.x = y2;
         R.push_back(newR);
     }
+    sort(R.begin(),R.end(),rect_comp);
     vector <stripe> S = rectangle_dac(R);
     cout<<"Stripes Returned by rectangle_dac:\n";
     for(auto i: S){
@@ -564,5 +571,5 @@ int main(){
     float area=0;
     for(auto i: S)
         area += i.x_measure*(i.y_inter.top.x-i.y_inter.bottom.x);
-    cout<<"Area is: "<<area<<endl;
+    cout << "so, FINALLY, Measure is: "<<area<<endl;
 }
