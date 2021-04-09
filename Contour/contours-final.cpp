@@ -2,6 +2,8 @@
 #include <algorithm>
 using namespace std;
 
+//Comments added
+
 
 float bound_x_min = INT_MAX, bound_x_max = INT_MIN;
 
